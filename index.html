@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Ms Meal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one working column — protein summary up top, tabbed tool below (recipes, week, pantry, shopping) */
+:root{
+  --bg:#f3f5f1; --surface:#ffffff; --fg:#1d2620; --muted:#5d6b62; --line:#dbe2da;
+  --accent:#2f7a4f; --accent-soft:#e2efe6; --turmeric:#c98a12; --turmeric-soft:#fbf0d9;
+  --warn:#b4502f; --warn-soft:#f8e5de; --water:#2b7fb8;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Figtree", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141a16; --surface:#1c241f; --fg:#e6ece7; --muted:#9aa9a0; --line:#2e3a33;
+  --accent:#6cc28f; --accent-soft:#1f3a2a; --turmeric:#e6b04a; --turmeric-soft:#3a2f17;
+  --warn:#ef9474; --warn-soft:#3d2219; --water:#6fb6e6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a16; --surface:#1c241f; --fg:#e6ece7; --muted:#9aa9a0; --line:#2e3a33;
+  --accent:#6cc28f; --accent-soft:#1f3a2a; --turmeric:#e6b04a; --turmeric-soft:#3a2f17;
+  --warn:#ef9474; --warn-soft:#3d2219; --water:#6fb6e6; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:24px 48px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(1.7rem,4vw,2.3rem);font-weight:800;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:.35rem 0 0;max-width:62ch}
+.safe{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.chip.no{background:var(--warn-soft);color:var(--warn)}
+.chip.label{background:var(--turmeric-soft);color:var(--turmeric)}
+.targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0}
+.t{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.t .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.t .v{font-family:var(--display);font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums}
+.t .v small{font-size:.8rem;font-weight:600;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;margin-bottom:18px}
+nav.tabs button{font:600 14px var(--body);background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:10px 12px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-color:var(--turmeric)}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.f{font:600 13px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:6px 12px;border-radius:999px;cursor:pointer}
+.f[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn{font:600 14px var(--body);border:0;background:var(--accent);color:var(--bg);padding:9px 14px;border-radius:8px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card.ready{border-left:4px solid var(--accent)}
+.card.miss{border-left:4px solid var(--turmeric)}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card h3{font-size:1.05rem;font-weight:600}
+.pro{font-family:var(--display);font-weight:800;font-size:1.15rem;color:var(--accent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pro small{font-size:.7rem;color:var(--muted);font-weight:600}
+.meta{font-size:12.5px;color:var(--muted)}
+.status{font-size:13px}
+.status b{color:var(--turmeric)}
+.status.ok b{color:var(--accent)}
+details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--accent)}
+details ol{margin:.4rem 0 0;padding-left:1.2rem;font-size:13.5px}
+details li{margin-bottom:3px}
+.ing{font-size:13px;color:var(--muted)}
+.ing span.have{color:var(--fg)}
+.ing span.need{color:var(--turmeric);font-weight:600}
+.tip{font-size:12.5px;background:var(--turmeric-soft);color:var(--fg);padding:6px 9px;border-radius:6px}
+/* week */
+.weekwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+td.day{font-family:var(--display);font-weight:600;font-size:14px;white-space:nowrap}
+select{width:100%;font:13px var(--body);padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+td.tot{font-variant-numeric:tabular-nums;white-space:nowrap}
+.meter{height:6px;background:var(--line);border-radius:3px;margin-top:4px;overflow:hidden;width:80px}
+.meter i{display:block;height:100%;background:var(--accent)}
+.meter i.low{background:var(--warn)}
+.lowtxt{color:var(--warn);font-weight:600}
+/* pantry */
+.pgroup{margin-bottom:18px}
+.pgroup h3{font-size:.95rem;margin-bottom:8px}
+.items{display:flex;flex-wrap:wrap;gap:8px}
+.item{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13.5px}
+.item input{accent-color:var(--accent);margin:0}
+.item.on{border-color:var(--accent);background:var(--accent-soft)}
+.legend{font-size:13px;color:var(--muted);margin-bottom:14px}
+/* shop */
+.shop{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 14px}
+.shop li{list-style:none;display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.shop li:last-child{border:0}
+.shop ul{margin:0;padding:0}
+.shop .for{color:var(--muted);font-size:12.5px;text-align:right}
+.empty{color:var(--muted);padding:16px 0}
+.note{font-size:12.5px;color:var(--muted);margin-top:16px;max-width:70ch}
+.toast{font-size:13px;color:var(--accent);font-weight:600}
+/* water */
+.water{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;margin:-6px 0 22px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.water .wl{min-width:150px}
+.water .wl b{font-family:var(--display);font-size:1.3rem;font-variant-numeric:tabular-nums}
+.water .wl div{font-size:12.5px;color:var(--muted)}
+.glasses{display:flex;flex-wrap:wrap;gap:6px}
+.glass{width:30px;height:38px;border:2px solid var(--water);border-top-width:1px;border-radius:3px 3px 8px 8px;background:transparent;cursor:pointer;position:relative;overflow:hidden;padding:0}
+.glass::after{content:"";position:absolute;left:0;right:0;bottom:0;height:0;background:var(--water);opacity:.85;transition:height .25s}
+.glass.full::after{height:80%}
+.water .wbtns{display:flex;gap:6px;margin-left:auto}
+.mini{font:600 12.5px var(--body);border:1px solid var(--line);background:transparent;color:var(--fg);padding:5px 10px;border-radius:6px;cursor:pointer}
+/* add item */
+.addform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:12px;margin-bottom:18px}
+.addform input[type=text]{flex:1 1 180px;min-width:0;font:14px var(--body);padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.addform select{width:auto;padding:8px}
+.addform label.hv{font-size:13px;display:flex;align-items:center;gap:5px}
+.item .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0 0 0 2px}
+.item.custom{border-style:dashed}
+/* assistant */
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom, 0px));z-index:20;font:600 14px var(--body);background:var(--fg);color:var(--bg);border:0;border-radius:999px;padding:12px 18px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.panel{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom, 0px));z-index:21;width:min(380px,calc(100vw - 32px));max-height:min(560px,calc(100vh - 110px));background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden}
+.panel header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.panel header h2{font-size:1rem}
+.panel header small{display:block;font-size:11.5px;color:var(--muted);font-family:var(--body);font-weight:400}
+.msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-height:120px}
+.msg{font-size:14px;white-space:pre-wrap;padding:8px 11px;border-radius:10px;max-width:92%;overflow-wrap:anywhere}
+.msg.u{align-self:flex-end;background:var(--accent);color:var(--bg)}
+.msg.a{align-self:flex-start;background:var(--accent-soft);color:var(--fg)}
+.msg.err{background:var(--warn-soft);color:var(--warn)}
+.sugg{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 8px}
+.sugg button{font:500 12px var(--body);border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:4px 10px;cursor:pointer}
+.ask{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--line)}
+.ask input{flex:1;min-width:0;font:14px var(--body);padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+/* gym */
+.gsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.box h3{font-size:1rem;margin-bottom:8px}
+.wkdots{display:flex;gap:6px;margin-top:6px}
+.wkdots span{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+.wkdots i{display:block;height:26px;border-radius:6px;border:1px solid var(--line);margin-bottom:3px}
+.wkdots i.on{background:var(--accent);border-color:var(--accent)}
+.wkdots i.today{outline:2px solid var(--turmeric);outline-offset:1px}
+.big{font-family:var(--display);font-size:1.6rem;font-weight:800;font-variant-numeric:tabular-nums}
+.logtop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.logtop select,.logtop input{width:auto;font:14px var(--body);padding:7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.exrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.exrow:last-child{border:0}
+.exname{font-weight:600}
+.exname small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.exin{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.exin input{width:52px;font:14px var(--body);padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);text-align:center;font-variant-numeric:tabular-nums}
+.exin label{font-size:11px;color:var(--muted)}
+.last{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.last b{color:var(--accent)}
+.hist li{list-style:none;display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.hist ul{margin:0;padding:0}
+.ptable{overflow-x:auto}
+.ptable table{min-width:420px}
+.routine details{border-bottom:1px solid var(--line);padding:8px 0}
+.routine ul{margin:.4rem 0 0;padding-left:1.1rem;font-size:13.5px}
+@media (max-width:520px){.exrow{grid-template-columns:1fr}.exin{justify-content:flex-start}}
+.pf{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 12px;align-items:center}
+.pf label{font-size:13px;color:var(--muted);font-weight:600}
+.pf input,.pf select{font:14px var(--body);padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);width:100%;min-width:0}
+.hello{margin-bottom:6px}
+.hello h2{font-size:1.35rem}
+.meter.wide{width:100%;margin-top:8px}
+.meter i.wbar{background:var(--water)}
+.hm li{list-style:none;display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.hm li:last-child{border:0}
+.hm ul{margin:0;padding:0}
+.hm .sl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;display:block}
+.hm .pp{font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);white-space:nowrap}
+.hm .bb{color:var(--turmeric);font-size:12px}
+a.see{font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none}
+a.see:hover{text-decoration:underline}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Ms Meal</h1>
+    <p class="sub">Your meal, water, and gym buddy. Targets adjust to your weight, height, age, and gym schedule.</p>
+    <p class="meta" id="profline" style="margin-top:6px"></p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-home" aria-selected="true" data-tab="home">Today</button>
+    <button role="tab" id="tab-recipes" aria-selected="false" data-tab="recipes">Recipes</button>
+    <button role="tab" id="tab-week" aria-selected="false" data-tab="week">Week plan</button>
+    <button role="tab" id="tab-gym" aria-selected="false" data-tab="gym">Gym</button>
+    <button role="tab" id="tab-pantry" aria-selected="false" data-tab="pantry">My pantry</button>
+    <button role="tab" id="tab-shop" aria-selected="false" data-tab="shop">Shopping list</button>
+    <button role="tab" id="tab-profile" aria-selected="false" data-tab="profile">Profile</button>
+  </nav>
+
+  <section id="p-home">
+    <div class="hello"><h2 id="hdate">Today</h2><p class="meta" id="hline"></p></div>
+
+    <section class="targets" aria-label="Today at a glance">
+      <div class="t"><div class="k">Protein planned today</div><div class="v" id="hpro">–</div><div class="meter wide"><i id="hprobar"></i></div></div>
+      <div class="t"><div class="k">Water today</div><div class="v" id="hwater">–</div><div class="meter wide"><i id="hwbar" class="wbar"></i></div></div>
+      <div class="t"><div class="k">Gym this week</div><div class="v" id="hgym">–</div><div class="meta" id="hgymnote"></div></div>
+      <div class="t"><div class="k">Week protein average</div><div class="v" id="avg">–</div><div class="meta" id="avgnote">Goal –</div></div>
+    </section>
+
+    <section class="water" aria-label="Water today">
+      <div class="wl"><b id="wml">0 ml</b> <span style="color:var(--muted)" id="wgoal">/ 2,000 ml</span><div id="wnote">Tap a glass each time you drink 250 ml.</div></div>
+      <div class="glasses" id="glasses"></div>
+      <div class="wbtns"><button class="mini" id="wminus" aria-label="Remove one glass">−1 glass</button><button class="mini" id="wreset">Reset</button></div>
+    </section>
+
+    <div class="gsum">
+      <div class="box"><h3>Today's meals</h3><div id="hmeals"></div><button class="mini" data-tab="week" style="margin-top:10px">Change in Week plan</button></div>
+      <div class="box"><h3>Workout</h3><div id="hwork"></div><button class="mini" data-tab="gym" style="margin-top:10px">Open gym log</button></div>
+      <div class="box"><h3>To buy</h3><div id="hshop"></div><button class="mini" data-tab="shop" style="margin-top:10px">Full shopping list</button></div>
+    </div>
+
+    <div class="safe" style="margin-top:4px">
+      <span class="chip">Recipes avoid:</span><span class="chip no">Chicken</span><span class="chip no">Egg</span><span class="chip no">Shrimp / shellfish</span><span class="chip no">Fish</span>
+      <span class="chip label">⚑ = check label for hidden egg or fish</span>
+    </div>
+  </section>
+
+  <section id="p-profile" hidden>
+    <div class="gsum">
+      <form class="box" id="pform">
+        <h3>Your details</h3>
+        <div class="pf">
+          <label for="pw">Weight (kg)</label><input id="pw" type="number" inputmode="decimal" min="30" max="250" step="0.1" required>
+          <label for="ph">Height (cm)</label><input id="ph" type="number" inputmode="decimal" min="120" max="230" step="0.5" required>
+          <label for="pa">Age</label><input id="pa" type="number" inputmode="numeric" min="16" max="90" required>
+          <label for="ps">Sex</label><select id="ps"><option value="f">Female</option><option value="m">Male</option></select>
+          <label for="pg">Gym days per week</label><select id="pg"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>
+          <label for="pav">Foods to avoid</label><input id="pav" type="text" placeholder="e.g. peanuts, dairy" maxlength="120">
+        </div>
+        <div class="logtop" style="margin-top:12px"><button class="btn" type="submit">Save profile</button><span class="toast" id="ptoast"></span></div>
+        <p class="note" style="margin-top:6px">Saved only in this browser. Foods to avoid are passed to the assistant; the built-in recipes already avoid chicken, egg, shellfish, and fish.</p>
+      </form>
+      <div class="box">
+        <h3>Your targets</h3>
+        <ul class="hm" id="ptargets"></ul>
+        <p class="note">Protein: 1.6–2.0 g per kg body weight (common range for strength training). Water: about 35 ml per kg, plus 500 ml on gym days. Calories: Mifflin-St Jeor estimate of maintenance, adjusted for gym days. These are starting points; adjust using your weight and waist trend over 2–3 weeks.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="p-gym" hidden>
+    <div class="gsum">
+      <div class="box"><h3>This week</h3><div class="big" id="gweek">0</div><div class="wkdots" id="gdots"></div></div>
+      <div class="box"><h3>Total workouts</h3><div class="big" id="gtotal">0</div><div class="meta" id="gstreak"></div></div>
+      <div class="box"><h3>Next workout</h3><div class="big" id="gnext">Day A</div><div class="meta">Rotate A → B → C, with a rest day between sessions.</div></div>
+    </div>
+
+    <div class="box" style="margin-bottom:18px">
+      <h3>Log a workout</h3>
+      <form id="gform">
+        <div class="logtop">
+          <select id="gday" aria-label="Workout day"><option value="A">Day A</option><option value="B">Day B</option><option value="C">Day C</option></select>
+          <input type="date" id="gdate" aria-label="Date">
+          <span class="meta">Enter the weight you used (kg) and the reps for each set. Leave blank to skip.</span>
+        </div>
+        <div id="gex"></div>
+        <div class="logtop" style="margin-top:12px">
+          <input type="text" id="gnote" placeholder="Note (optional): felt strong, cut short…" aria-label="Note" style="flex:1 1 220px;min-width:0">
+          <button class="btn" type="submit">Save workout</button><span class="toast" id="gtoast"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="gsum">
+      <div class="box ptable"><h3>Strength progress</h3><div id="gprog"></div></div>
+      <div class="box hist"><h3>Recent workouts</h3><div id="ghist"></div><div class="logtop" style="margin-top:10px"><button class="mini" id="gexport" hidden>Download log (CSV)</button><span class="toast" id="etoast"></span></div></div>
+    </div>
+
+    <div class="box routine" style="margin-top:18px">
+      <h3>Beginner full-body routine</h3><p class="meta" id="rnote" style="margin:0 0 6px"></p>
+      <div id="groutine"></div>
+      <p class="note">When you hit the top of the rep range on every set, add a little weight next time (1–2 kg). Getting stronger while your waist shrinks means it's working, even if the scale doesn't move.</p>
+    </div>
+  </section>
+
+  <section id="p-recipes" hidden>
+    <div class="bar" id="filters"></div>
+    <div class="grid" id="recipes"></div>
+  </section>
+
+  <section id="p-week" hidden>
+    <div class="bar">
+      <button class="btn" id="autofill">Auto-fill with ready meals</button>
+      <button class="btn ghost" id="reset">Reset to starter plan</button>
+      <span class="toast" id="wtoast"></span>
+    </div>
+    <div class="weekwrap"><table id="week"></table></div>
+    <p class="note">Protein numbers are estimates per serving. Batch-cook lunch filling and curry once a week, then just reheat and assemble.</p>
+  </section>
+
+  <section id="p-pantry" hidden>
+    <p class="legend">Tick what you have now. Unticked items appear on your shopping list when a planned meal needs them. Oil, salt, pepper, and spices are assumed.</p>
+    <form class="addform" id="addform">
+      <input type="text" id="newname" placeholder="Add an item, e.g. canned corn" aria-label="New pantry item" maxlength="40" required>
+      <select id="newgroup" aria-label="Category">
+        <option>Protein</option><option>Grains & bread</option><option>Produce</option><option>Dairy</option><option>Sauces</option><option selected>Other</option>
+      </select>
+      <label class="hv"><input type="checkbox" id="newhave" checked> I have it</label>
+      <button class="btn" type="submit">Add</button>
+    </form>
+    <div id="pantry"></div>
+  </section>
+
+  <section id="p-shop" hidden>
+    <div class="bar"><button class="btn" id="copy">Copy list</button><span class="toast" id="ctoast"></span></div>
+    <div class="shop" id="shop"></div>
+    <p class="note">Cheapest protein wins: tofu, monggo, lentils, chickpeas, and milk. Add a small pack of pork giniling or lean beef when the budget allows.</p>
+  </section>
+</div>
+
+<button class="fab" id="fab" aria-expanded="false" aria-controls="panel" hidden>Ask Ms Meal</button>
+<section class="panel" id="panel" hidden aria-label="Ms Meal assistant">
+  <header><h2>Ms Meal<small>Knows your pantry, allergies, plan, and water today</small></h2><button class="mini" id="pclose" aria-label="Close assistant">Close</button></header>
+  <div class="msgs" id="msgs"><div class="msg a">Hi, I'm Ms Meal! Ask me what to cook with what you have, how to hit your protein, or for a swap when you're missing something.</div></div>
+  <div class="sugg" id="sugg">
+    <button>What can I cook tonight?</button><button>Am I hitting protein this week?</button><button>Cheap high-protein snack?</button><button>Use up my custom items</button>
+  </div>
+  <form class="ask" id="askform"><input id="askbox" placeholder="Ask about meals, swaps, protein…" aria-label="Message" autocomplete="off"><button class="btn" id="sendbtn" type="submit">Send</button></form>
+</section>
+
+<script>
+const BASE = {
+  // id: [name, group, haveByDefault, checkLabel]
+  pita:["Pita wraps","Grains & bread",1,1], chocoats:["Chocolate oats","Grains & bread",1,0],
+  coco:["Coco Crunch packs","Grains & bread",1,0], rice:["Rice","Grains & bread",0,0],
+  udon:["Udon noodles","Grains & bread",0,1], bihon:["Bihon (rice noodles)","Grains & bread",0,0],
+  tortilla:["Flour tortillas","Grains & bread",0,1],
+  tofu:["Firm tofu / tokwa","Protein",1,0], chickpeas:["Chickpeas (dried)","Protein",1,0],
+  lentils:["Red lentils","Protein",1,0], kidney:["Red kidney beans","Protein",0,0],
+  refritos:["Refried beans (refritos)","Protein",0,1], monggo:["Monggo","Protein",0,0],
+  giniling:["Lean pork giniling","Protein",0,0], beef:["Lean beef (bistek cut)","Protein",0,0],
+  edamame:["Edamame (frozen)","Protein",0,0], powder:["Protein powder","Protein",0,1],
+  milk:["Milk","Dairy",1,0], cheese:["Cheese","Dairy",0,0],
+  potato:["Potatoes","Produce",1,0], carrot:["Carrots","Produce",1,0], apple:["Green apple","Produce",1,0],
+  banana:["Bananas","Produce",0,0], onion:["Onion","Produce",0,0], garlic:["Garlic","Produce",0,0],
+  pechay:["Pechay or cabbage","Produce",0,0], calamansi:["Calamansi","Produce",0,0],
+  curry:["Curry blocks","Sauces",1,1], soy:["Soy sauce","Sauces",0,0]
+};
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let profile = Object.assign({w:60,h:160,a:28,s:"f",g:3,avoid:""}, load("lpk-profile", {}));
+function T(){
+  const {w,h,a,s,g}=profile;
+  const bmr=10*w+6.25*h-5*a+(s==="m"?5:-161);
+  const f=g<=1?1.2:g<=3?1.375:g<=5?1.55:1.725;
+  const water=Math.max(1500,Math.round(w*35/250)*250);
+  const bmi=w/((h/100)**2);
+  return {pmin:Math.round(w*1.6),pmax:Math.round(w*2),kcal:Math.round(bmr*f/10)*10,water,waterGym:water+500,bmi,freq:+g};
+}
+let custom = load("lpk-custom", {});
+let ING = {...BASE, ...custom};
+const R = [
+ {id:"oats",n:"Chocolate oats with milk",s:["b"],p:12,m:5,i:["chocoats","milk"],o:["banana"],st:["Cook the oats in milk instead of water.","Top with sliced banana if you have it."],tip:"Milk instead of water adds ~8 g protein."},
+ {id:"coco",n:"Coco Crunch + milk",s:["b","s"],p:10,m:2,i:["coco","milk"],st:["Pour one small pack into a bowl with a full cup of milk."],tip:"Sugary; switch to oats when the packs run out."},
+ {id:"cheesepita",n:"Toasted cheese pita + milk",s:["b"],p:18,m:8,i:["pita","cheese","milk"],st:["Fill a pita with cheese and toast in a pan until melted.","Have with a glass of milk."]},
+ {id:"shake",n:"Banana protein shake",s:["b","s"],p:30,m:3,i:["powder","milk","banana"],st:["Blend 1 scoop, 1 cup milk, and 1 banana."],tip:"Easiest way to close a protein gap."},
+ {id:"wrap",n:"Chickpea & tofu pita wrap",s:["l"],p:24,m:10,i:["pita","chickpeas","tofu","carrot"],o:["garlic","calamansi"],st:["Batch: soak chickpeas overnight, boil 45–60 min until tender.","Pan-fry crumbled tofu with garlic, salt, and paprika or curry powder.","Mix with chickpeas and grated carrot; mash part of it so it holds.","Split into ~10 portions. Fridge 3–4 days, freeze the rest.","Daily: warm a portion and fill a pita."],tip:"Store filling and pitas separately so wraps don't get soggy."},
+ {id:"currypita",n:"Chickpea curry pita",s:["l","d"],p:20,m:20,i:["pita","chickpeas","curry","potato"],o:["onion"],st:["Simmer cooked chickpeas and diced potato in 2 cups water for 10 min.","Turn off heat, melt in 1 curry block, simmer until thick.","Spoon into a pita or eat with the pita on the side."]},
+ {id:"lentilcurry",n:"Japanese lentil curry with tofu",s:["d","l"],p:28,m:35,i:["lentils","potato","carrot","tofu","curry","rice"],o:["onion","garlic"],st:["Sauté onion and garlic. Add diced potato and carrot with 3–4 cups water; simmer 10 min.","Add 1 cup red lentils; simmer 15 min until soft.","Turn off heat, melt in 2–3 curry blocks, then add pan-fried tofu cubes.","Simmer 5 min. Serve with rice. Makes 4–5 servings."],tip:"Use fewer blocks than the box says; lentils already thicken it."},
+ {id:"udon",n:"Tofu curry udon",s:["d","l"],p:25,m:20,i:["udon","tofu","carrot","curry"],o:["onion","lentils"],st:["Pan-fry tofu cubes until golden.","Simmer sliced carrot (and onion) in 3 cups water for 10 min.","Melt in 1–2 curry blocks, then add tofu and cooked udon."],tip:"Add ½ cup cooked lentils for +8 g."},
+ {id:"lentilsoup",n:"Red lentil, carrot & potato soup",s:["l","d"],p:18,m:25,i:["lentils","carrot","potato"],o:["onion","garlic","milk"],st:["Sauté onion and garlic if you have them.","Add 1 cup lentils, diced carrot and potato, 4 cups water; simmer 20 min.","Mash lightly, season, and finish with a splash of milk."],tip:"Pair with a pita for +6 g."},
+ {id:"beancurry",n:"Your kidney bean & lentil curry",s:["d","l"],p:22,m:35,i:["kidney","lentils","potato","rice"],o:["onion","curry","tofu"],st:["Cook as usual with kidney beans, lentils, and potatoes.","Add tofu cubes or swap some potato for extra lentils to push protein up.","Serve with rice for a complete protein."]},
+ {id:"burrito",n:"Bean & refritos burrito",s:["l"],p:20,m:10,i:["tortilla","refritos","kidney","rice"],o:["cheese"],st:["Mix refritos with whole kidney beans (less salty, more protein).","Fill a tortilla with beans, rice, and cheese if you have it.","Batch tip: roll 4–5, wrap in foil, freeze."],tip:"Choose low-sodium refritos to avoid bloating."},
+ {id:"tofupork",n:"Tofu & pork giniling stir-fry",s:["d"],p:28,m:15,i:["tofu","giniling","soy","rice"],o:["garlic","onion"],st:["Fry tofu cubes until golden; set aside.","Sauté garlic, onion, and giniling until browned.","Add tofu and a splash of soy sauce. Serve with rice."]},
+ {id:"monggo",n:"Ginisang monggo with pork",s:["d","l"],p:20,m:40,i:["monggo","giniling","pechay","rice"],o:["garlic","onion"],st:["Boil monggo until soft (30 min).","Sauté garlic, onion, and giniling; add monggo and water.","Add pechay at the end. Serve with rice."]},
+ {id:"bihon",n:"Pancit bihon with tofu",s:["d","l"],p:18,m:20,i:["bihon","tofu","carrot","pechay","soy"],o:["garlic","onion","giniling"],st:["Soak bihon in water 5 min.","Sauté garlic, onion, tofu strips, carrot, and cabbage.","Add soy sauce and a little water, then toss in bihon until absorbed."],tip:"Skip patis (fish sauce) and shrimp."},
+ {id:"bistek",n:"Beef bistek with rice",s:["d"],p:26,m:25,i:["beef","onion","soy","calamansi","rice"],st:["Marinate thin beef slices in soy sauce and calamansi (15 min+).","Pan-fry beef, then sauté onion rings in the same pan.","Pour in the marinade, simmer briefly. Serve with rice."]},
+ {id:"roastchick",n:"Roasted chickpeas",s:["s"],p:7,m:30,i:["chickpeas"],st:["Toss cooked, dried chickpeas in oil and spices.","Bake or air-fry until crisp (20–25 min)."]},
+ {id:"applemilk",n:"Green apple + glass of milk",s:["s"],p:8,m:1,i:["apple","milk"],st:["Slice the apple, pour a glass of milk."]},
+ {id:"edamame",n:"Salted edamame",s:["s"],p:17,m:6,i:["edamame"],st:["Boil frozen edamame 5 min, drain, salt."]}
+];
+const RB = Object.fromEntries(R.map(r=>[r.id,r]));
+const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], SLOTS=[["b","Breakfast"],["l","Lunch"],["s","Snack"],["d","Dinner"]];
+const STARTER = {
+ Mon:{b:"oats",l:"wrap",s:"roastchick",d:"lentilcurry"}, Tue:{b:"coco",l:"wrap",s:"applemilk",d:"lentilcurry"},
+ Wed:{b:"oats",l:"wrap",s:"roastchick",d:"lentilsoup"}, Thu:{b:"coco",l:"wrap",s:"coco",d:"lentilcurry"},
+ Fri:{b:"oats",l:"currypita",s:"roastchick",d:"lentilcurry"}, Sat:{b:"oats",l:"wrap",s:"coco",d:"lentilsoup"},
+ Sun:{b:"coco",l:"wrap",s:"roastchick",d:"lentilcurry"}
+};
+let have = load("lpk-have", Object.fromEntries(Object.entries(ING).map(([k,v])=>[k,!!v[2]])));
+Object.keys(ING).forEach(k=>{if(!(k in have))have[k]=!!ING[k][2]});
+let plan = load("lpk-plan", JSON.parse(JSON.stringify(STARTER)));
+let filter = "all";
+const missing = r => r.i.filter(x=>!have[x]);
+const esc = s => s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderFilters(){
+  const fs=[["all","All"],["ready","Ready now"],["b","Breakfast"],["l","Lunch"],["d","Dinner"],["s","Snack"]];
+  document.getElementById("filters").innerHTML = fs.map(([k,l])=>`<button class="f" data-f="${k}" aria-pressed="${filter===k}">${l}</button>`).join("");
+}
+function renderRecipes(){
+  const slotName = Object.fromEntries(SLOTS);
+  let list = R.filter(r=> filter==="all" ? true : filter==="ready" ? !missing(r).length : r.s.includes(filter));
+  list.sort((a,b)=>missing(a).length-missing(b).length || b.p-a.p);
+  document.getElementById("recipes").innerHTML = list.map(r=>{
+    const m=missing(r), ok=!m.length;
+    const ingList=[...r.i.map(x=>({x,opt:0})),...(r.o||[]).map(x=>({x,opt:1}))].map(({x,opt})=>
+      `<span class="${have[x]?"have":opt?"":"need"}">${esc(ING[x][0])}${ING[x][3]?" ⚑":""}${opt?" (optional)":""}</span>`).join(", ");
+    return `<article class="card ${ok?"ready":"miss"}">
+      <div class="row"><h3>${esc(r.n)}</h3><span class="pro">${r.p}<small> g</small></span></div>
+      <div class="meta">${r.s.map(s=>slotName[s]).join(" · ")} · ~${r.m} min</div>
+      <div class="status ${ok?"ok":""}">${ok?"<b>Ready to cook</b> with what you have":`<b>Buy:</b> ${m.map(x=>esc(ING[x][0])).join(", ")}`}</div>
+      <div class="ing">${ingList}</div>
+      ${r.tip?`<div class="tip">${esc(r.tip)}</div>`:""}
+      <a class="see" href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent(r.n+" recipe")}" target="_blank" rel="noopener">See photos ↗</a>
+      <details><summary>How to make it</summary><ol>${r.st.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></details>
+    </article>`}).join("") || `<p class="empty">Nothing matches yet. Tick more items in My pantry.</p>`;
+}
+function dayTotal(d){return SLOTS.reduce((t,[s])=>t+(plan[d][s]?RB[plan[d][s]].p:0),0)}
+function renderWeek(){
+  const head=`<tr><th>Day</th>${SLOTS.map(s=>`<th>${s[1]}</th>`).join("")}<th>Protein</th></tr>`;
+  const rows=DAYS.map(d=>{
+    const tot=dayTotal(d), pct=Math.min(100,tot/T().pmax*100);
+    return `<tr><td class="day">${d}</td>${SLOTS.map(([s])=>{
+      const opts=R.filter(r=>r.s.includes(s));
+      return `<td><select id="sel-${d}-${s}" data-d="${d}" data-s="${s}" aria-label="${d} ${s}"><option value="">—</option>${opts.map(r=>`<option value="${r.id}" ${plan[d][s]===r.id?"selected":""}>${esc(r.n)}${missing(r).length?" · buy":""} (${r.p}g)</option>`).join("")}</select></td>`}).join("")}
+      <td class="tot"><span class="${tot<T().pmin?"lowtxt":""}">${tot} g</span><div class="meter"><i class="${tot<T().pmin?"low":""}" style="width:${pct}%"></i></div></td></tr>`}).join("");
+  document.getElementById("week").innerHTML=head+rows;
+  const avg=Math.round(DAYS.reduce((t,d)=>t+dayTotal(d),0)/7);
+  document.getElementById("avg").innerHTML=`${avg}<small> g/day</small>`;
+}
+function renderPantry(){
+  const groups={};
+  Object.entries(ING).forEach(([k,v])=>(groups[v[1]]=groups[v[1]]||[]).push(k));
+  document.getElementById("pantry").innerHTML=Object.entries(groups).map(([g,ks])=>
+    `<div class="pgroup"><h3>${g}</h3><div class="items">${ks.map(k=>
+      `<label class="item ${have[k]?"on":""} ${custom[k]?"custom":""}"><input type="checkbox" id="have-${k}" data-k="${k}" ${have[k]?"checked":""}>${esc(ING[k][0])}${ING[k][3]?" ⚑":""}${custom[k]?`<button type="button" class="x" data-del="${k}" aria-label="Remove ${esc(ING[k][0])}">×</button>`:""}</label>`).join("")}</div></div>`).join("");
+}
+function shopList(){
+  const need={};
+  DAYS.forEach(d=>SLOTS.forEach(([s])=>{const id=plan[d][s]; if(!id)return;
+    missing(RB[id]).forEach(x=>{(need[x]=need[x]||new Set()).add(RB[id].n)})}));
+  return need;
+}
+function renderShop(){
+  const need=shopList(), keys=Object.keys(need);
+  document.getElementById("shop").innerHTML = keys.length
+    ? `<ul>${keys.map(k=>`<li><span>${esc(ING[k][0])}${ING[k][3]?" ⚑":""}</span><span class="for">for ${[...need[k]].map(esc).join(", ")}</span></li>`).join("")}</ul>`
+    : `<p class="empty">Nothing to buy. Every meal in your plan uses what you already have.</p>`;
+}
+function all(){renderFilters();renderRecipes();renderWeek();renderPantry();renderShop();if(window.__ready)renderHome()}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-tab]");
+  if(t){const name=t.dataset.tab;document.querySelectorAll('nav.tabs [data-tab]').forEach(b=>{const on=b.dataset.tab===name;b.setAttribute("aria-selected",on);document.getElementById("p-"+b.dataset.tab).hidden=!on});if(t.closest(".gsum"))window.scrollTo({top:0})}
+  const f=e.target.closest("[data-f]"); if(f){filter=f.dataset.f;renderFilters();renderRecipes()}
+});
+document.addEventListener("change",e=>{
+  const el=e.target;
+  if(el.dataset.k){have[el.dataset.k]=el.checked;save("lpk-have",have);all()}
+  if(el.dataset.d){plan[el.dataset.d][el.dataset.s]=el.value||null;save("lpk-plan",plan);renderWeek();renderShop();renderHome()}
+});
+document.getElementById("autofill").onclick=()=>{
+  const counter={};
+  DAYS.forEach((d,i)=>SLOTS.forEach(([s])=>{
+    const ready=R.filter(r=>r.s.includes(s)&&!missing(r).length);
+    if(!ready.length)return;
+    ready.sort((a,b)=>(counter[a.id]||0)-(counter[b.id]||0)||b.p-a.p);
+    const pick=ready[(i%2 && ready.length>1 && (counter[ready[0].id]||0)===(counter[ready[1].id]||0))?1:0];
+    plan[d][s]=pick.id; counter[pick.id]=(counter[pick.id]||0)+1;
+  }));
+  save("lpk-plan",plan);renderWeek();renderShop();renderHome();
+  document.getElementById("wtoast").textContent="Filled with meals you can cook now.";
+};
+document.getElementById("reset").onclick=()=>{plan=JSON.parse(JSON.stringify(STARTER));save("lpk-plan",plan);renderWeek();renderShop();renderHome();document.getElementById("wtoast").textContent="Starter plan restored."};
+document.getElementById("copy").onclick=()=>{
+  const need=shopList(), txt=Object.keys(need).map(k=>"☐ "+ING[k][0]).join("\n")||"Nothing to buy";
+  const msg=document.getElementById("ctoast");
+  navigator.clipboard.writeText(txt).then(()=>msg.textContent="Copied.").catch(()=>{msg.textContent="Copy blocked here. Select the list and copy it manually."});
+};
+/* ---- custom pantry items ---- */
+document.getElementById("addform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=document.getElementById("newname").value.trim(); if(!name)return;
+  const id="c_"+name.toLowerCase().replace(/[^a-z0-9]+/g,"_")+"_"+Date.now().toString(36).slice(-3);
+  custom[id]=[name,document.getElementById("newgroup").value,0,0];
+  ING={...BASE,...custom}; have[id]=document.getElementById("newhave").checked;
+  save("lpk-custom",custom); save("lpk-have",have);
+  document.getElementById("newname").value=""; all();
+});
+document.addEventListener("click",e=>{
+  const d=e.target.closest("[data-del]"); if(!d)return;
+  e.preventDefault(); const k=d.dataset.del;
+  delete custom[k]; delete have[k]; ING={...BASE,...custom};
+  save("lpk-custom",custom); save("lpk-have",have); all();
+});
+
+/* ---- water ---- */
+const today=()=>new Date().toLocaleDateString("en-CA");
+let water=load("lpk-water",{date:today(),g:0}); if(water.date!==today())water={date:today(),g:0};
+function renderWater(){
+  if(water.date!==today())water={date:today(),g:0};
+  const n=Math.max(waterGoal()/250,water.g);
+  document.getElementById("glasses").innerHTML=Array.from({length:n},(_,i)=>`<button class="glass ${i<water.g?"full":""}" data-glass="${i}" aria-label="Glass ${i+1}${i<water.g?", drunk":""}"></button>`).join("");
+  const goal=waterGoal(), ml=water.g*250, left=Math.ceil((goal-ml)/250);
+  document.getElementById("wml").textContent=ml.toLocaleString()+" ml";
+  document.getElementById("wgoal").textContent="/ "+goal.toLocaleString()+" ml"+(gymToday()?" (gym day)":"");
+  document.getElementById("wnote").textContent= ml>=goal?"Goal reached. Nice work.": `${left} more glass${left===1?"":"es"} to go. Tap a glass per 250 ml.`;
+  save("lpk-water",water);
+  if(window.__ready)renderHome();
+}
+document.getElementById("glasses").addEventListener("click",e=>{const g=e.target.closest("[data-glass]");if(!g)return;const i=+g.dataset.glass;water.g=(i<water.g&&i===water.g-1)?i:Math.max(water.g,i+1);renderWater()});
+document.getElementById("wminus").onclick=()=>{water.g=Math.max(0,water.g-1);renderWater()};
+document.getElementById("wreset").onclick=()=>{water.g=0;renderWater()};
+
+/* ---- gym ---- */
+const ROUTINE={
+ A:[["Goblet squat","3 × 8–12","Hold a dumbbell at your chest; sit back and down, knees track over toes."],["Lat pulldown","3 × 10–12","Pull the bar to your upper chest; squeeze shoulder blades down."],["Dumbbell bench press","3 × 8–12","Lower slowly to chest level, press up without locking elbows hard."],["Hip thrust","3 × 10–15","Upper back on a bench; drive through heels, squeeze glutes at the top."],["Dead bug","3 × 8 per side","Lower back pressed to the floor the whole time."],["Plank","3 × 30 s","Squeeze glutes and brace like you're about to be poked."]],
+ B:[["Dumbbell Romanian deadlift","3 × 8–12","Push hips back with a flat back; feel the hamstrings stretch."],["Seated cable row","3 × 10–12","Sit tall; pull to your belly button."],["Dumbbell shoulder press","3 × 8–12","Brace your core; don't arch your lower back."],["Reverse lunge","3 × 8 per leg","Step back, lower the back knee, push through the front heel."],["Pallof press","3 × 10 per side","Press the cable straight out and resist the twist. Great for a flat-looking waist."],["Hanging or lying leg raise","3 × 10","Slow and controlled; no swinging."]],
+ C:[["Leg press","3 × 10–12","Feet hip-width; lower until knees reach about 90°."],["Glute bridge (weighted)","3 × 12–15","Pause 1 second at the top."],["Assisted pull-up or pulldown","3 × 8–10","Use the assist machine or a band; full range of motion."],["Incline dumbbell press","3 × 8–12","Bench at about 30°."],["Bird dog","3 × 8 per side","Reach long, keep hips level."],["Side plank","3 × 20 s per side","Hips high, body in a straight line."]]
+};
+let gym=load("lpk-gym",[]);
+const demo=n=>"https://www.youtube.com/results?search_query="+encodeURIComponent(n+" proper form beginner");
+const exUnit=n=>/plank/i.test(n)?"sec":"reps";
+const fmtDate=d=>new Date(d+"T00:00").toLocaleDateString("en-PH",{weekday:"short",month:"short",day:"numeric"});
+function weekStart(dt){const d=new Date(dt);d.setHours(0,0,0,0);const w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return d}
+function iso(d){return d.toLocaleDateString("en-CA")}
+function gymToday(){return gym.some(g=>g.date===today())}
+function waterGoal(){const t=T();return gymToday()?t.waterGym:t.water}
+function nextDay(){const last=[...gym].sort((a,b)=>a.date<b.date?1:-1)[0];return last?{A:"B",B:"C",C:"A"}[last.day]:"A"}
+function lastFor(name,beforeDate){
+  const s=[...gym].filter(g=>g.ex[name]&&(!beforeDate||g.date<=beforeDate)).sort((a,b)=>a.date<b.date?1:-1)[0];
+  return s?{date:s.date,...s.ex[name]}:null;
+}
+function renderGymForm(){
+  const day=document.getElementById("gday").value;
+  document.getElementById("gex").innerHTML=ROUTINE[day].map(([n,t],i)=>{
+    const L=lastFor(n), u=exUnit(n);
+    return `<div class="exrow"><div class="exname">${esc(n)}<small>${t} · <a class="see" href="${demo(n)}" target="_blank" rel="noopener">Watch how ↗</a></small></div>
+      <div class="exin"><label for="kg-${day}-${i}">kg</label><input id="kg-${day}-${i}" inputmode="decimal" placeholder="${L&&L.kg?L.kg:"–"}">
+      ${[0,1,2].map(j=>`<input id="r-${day}-${i}-${j}" inputmode="numeric" aria-label="Set ${j+1} ${u}" placeholder="${u==="sec"?"sec":"set "+(j+1)}">`).join("")}</div>
+      <div class="last">${L?`Last time (${fmtDate(L.date)}): <b>${L.kg?L.kg+" kg × ":""}${L.reps.join(", ")}</b> ${u}`:"First time. Start light and focus on form."}</div></div>`}).join("");
+}
+function renderGym(){
+  const ws=weekStart(new Date()), days=[...Array(7)].map((_,i)=>{const d=new Date(ws);d.setDate(d.getDate()+i);return iso(d)});
+  const set=new Set(gym.map(g=>g.date)), wk=days.filter(d=>set.has(d)).length;
+  const fq=T().freq; document.getElementById("gweek").textContent=`${wk} / ${fq}`;
+  document.getElementById("gdots").innerHTML=days.map((d,i)=>`<span><i class="${set.has(d)?"on":""} ${d===today()?"today":""}"></i>${DAYS[i]}</span>`).join("");
+  document.getElementById("gtotal").textContent=gym.length;
+  let streak=0;{let w=weekStart(new Date());if(days.filter(d=>set.has(d)).length<fq)w.setDate(w.getDate()-7);
+    for(;;){const ds=[...Array(7)].map((_,i)=>{const d=new Date(w);d.setDate(d.getDate()+i);return iso(d)});if(ds.filter(d=>set.has(d)).length>=fq){streak++;w.setDate(w.getDate()-7)}else break}}
+  document.getElementById("gstreak").textContent=streak?`${streak} week${streak>1?"s":""} in a row hitting ${fq} workout${fq>1?"s":""}`:`Hit ${fq} workout${fq>1?"s":""} in a week to start a streak.`;
+  document.getElementById("rnote").textContent=`Set for ${fq} day${fq>1?"s":""} a week. Rotate A → B → C${fq<=4?", with a rest day between sessions":""}.`;
+  document.getElementById("gnext").textContent="Day "+nextDay();
+  const names=[...new Set(Object.values(ROUTINE).flat().map(e=>e[0]))].filter(n=>gym.some(g=>g.ex[n]));
+  document.getElementById("gprog").innerHTML=names.length?`<table><tr><th>Exercise</th><th>First</th><th>Latest</th><th>Change</th></tr>${names.map(n=>{
+      const ss=gym.filter(g=>g.ex[n]).sort((a,b)=>a.date<b.date?-1:1), f=ss[0].ex[n], l=ss[ss.length-1].ex[n], u=exUnit(n);
+      const val=x=>x.kg?`${x.kg} kg`:`${Math.max(...x.reps)} ${u}`, dv=(l.kg&&f.kg)?(l.kg-f.kg):(Math.max(...l.reps)-Math.max(...f.reps));
+      return `<tr><td>${esc(n)}</td><td>${val(f)}</td><td>${val(l)}</td><td style="color:${dv>0?"var(--accent)":"var(--muted)"}">${dv>0?"+":""}${+dv.toFixed(1)}${(l.kg&&f.kg)?" kg":" "+u}</td></tr>`}).join("")}</table>`
+    :`<p class="empty">Log your first workout to see progress here.</p>`;
+  const recent=[...gym].sort((a,b)=>a.date<b.date?1:-1).slice(0,8);
+  document.getElementById("ghist").innerHTML=recent.length?`<ul>${recent.map(g=>`<li><span><b>${fmtDate(g.date)}</b> · Day ${g.day} · ${Object.keys(g.ex).length} exercises${g.note?` · ${esc(g.note)}`:""}</span><button class="x mini" data-gdel="${g.id}" aria-label="Delete workout">Delete</button></li>`).join("")}</ul>`:`<p class="empty">No workouts yet. Your first one goes here.</p>`;
+  document.getElementById("groutine").innerHTML=Object.entries(ROUTINE).map(([d,ex])=>`<details><summary>Day ${d}</summary><ul>${ex.map(([n,t,c])=>`<li><b>${esc(n)}</b>, ${t}. ${esc(c)} <a class="see" href="${demo(n)}" target="_blank" rel="noopener">Watch how ↗</a></li>`).join("")}</ul></details>`).join("");
+  renderWater();
+}
+document.getElementById("gday").addEventListener("change",renderGymForm);
+document.getElementById("gform").addEventListener("submit",e=>{
+  e.preventDefault();
+  const day=document.getElementById("gday").value, date=document.getElementById("gdate").value||today(), ex={};
+  ROUTINE[day].forEach(([n],i)=>{
+    const kg=parseFloat(document.getElementById(`kg-${day}-${i}`).value)||0;
+    const reps=[0,1,2].map(j=>parseInt(document.getElementById(`r-${day}-${i}-${j}`).value)).filter(x=>x>0);
+    if(reps.length)ex[n]={kg,reps};
+  });
+  const t=document.getElementById("gtoast");
+  if(!Object.keys(ex).length){t.textContent="Add reps for at least one exercise.";return}
+  gym=gym.filter(g=>!(g.date===date&&g.day===day));
+  gym.push({id:Date.now().toString(36),date,day,ex,note:document.getElementById("gnote").value.trim()});
+  save("lpk-gym",gym); document.getElementById("gnote").value="";
+  t.textContent=`Saved Day ${day}. Rest tomorrow, then Day ${{A:"B",B:"C",C:"A"}[day]}.`;
+  document.getElementById("gday").value=nextDay(); renderGymForm(); renderGym();
+});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-gdel]");if(!b)return;gym=gym.filter(g=>g.id!==b.dataset.gdel);save("lpk-gym",gym);renderGym();renderGymForm()});
+document.getElementById("gdate").value=today();
+document.getElementById("gday").value=nextDay();
+renderGymForm(); renderGym();
+(async()=>{let dl=null;try{dl=await window.claude?.use?.("downloads")}catch(e){}
+  if(!dl&&!window.claude){dl={save:async({filename,data})=>{const u=URL.createObjectURL(new Blob([data],{type:"text/csv"}));const x=document.createElement("a");x.href=u;x.download=filename;document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}}}
+  if(!dl)return;
+  const b=document.getElementById("gexport");b.hidden=false;
+  b.onclick=async()=>{const rows=[["date","day","exercise","kg","set1","set2","set3","note"]];
+    [...gym].sort((a,b)=>a.date<b.date?-1:1).forEach(g=>Object.entries(g.ex).forEach(([n,x])=>rows.push([g.date,g.day,n,x.kg,...[0,1,2].map(i=>x.reps[i]??""),g.note||""])));
+    const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const t=document.getElementById("etoast");
+    try{await dl.save({filename:"gym-log.csv",data:csv});t.textContent="Saved."}catch(e){t.textContent="Download cancelled."}};
+})();
+
+/* ---- profile ---- */
+function renderProfile(){
+  const t=T(), F=id=>document.getElementById(id);
+  F("pw").value=profile.w;F("ph").value=profile.h;F("pa").value=profile.a;F("ps").value=profile.s;F("pg").value=profile.g;F("pav").value=profile.avoid;
+  const bmiCat=t.bmi<18.5?"under the healthy range":t.bmi<23?"healthy range (Asian cut-off 18.5–22.9)":t.bmi<25?"healthy by WHO, overweight by Asian cut-off":"above the healthy range";
+  F("ptargets").innerHTML=[["Protein",`${t.pmin}–${t.pmax} g/day`],["Calories (maintenance est.)",`~${t.kcal.toLocaleString()} kcal/day`],["Water",`${t.water.toLocaleString()} ml (${t.waterGym.toLocaleString()} on gym days)`],["Gym goal",`${t.freq} workout${t.freq>1?"s":""} a week`],["BMI",`${t.bmi.toFixed(1)}, ${bmiCat}`]].map(([k,v])=>`<li><span>${k}</span><span class="pp">${v}</span></li>`).join("");
+  F("profline").textContent=`Based on ${profile.w} kg · ${profile.h} cm · age ${profile.a} · ${t.freq}x gym a week.`;
+  F("avgnote").textContent=`Goal ${t.pmin}–${t.pmax} g/day`;
+  if(t.bmi<18.5)F("ptargets").insertAdjacentHTML("beforeend",`<li><span class="lowtxt">Focus on eating enough and building strength rather than losing weight.</span></li>`);
+}
+document.getElementById("pform").addEventListener("submit",e=>{
+  e.preventDefault(); const F=id=>document.getElementById(id);
+  profile={w:+F("pw").value,h:+F("ph").value,a:+F("pa").value,s:F("ps").value,g:+F("pg").value,avoid:F("pav").value.trim()};
+  save("lpk-profile",profile); F("ptoast").textContent="Saved. Targets updated.";
+  renderProfile(); renderWeek(); renderGym(); renderHome();
+});
+renderProfile();
+
+/* ---- home ---- */
+function todayKey(){return DAYS[(new Date().getDay()+6)%7]}
+function renderHome(){
+  const now=new Date(), k=todayKey();
+  document.getElementById("hdate").textContent=now.toLocaleDateString("en-PH",{weekday:"long",month:"long",day:"numeric"});
+  document.getElementById("hline").textContent=gymToday()?"Workout logged today. Drink a little extra water.":`Next workout: Day ${nextDay()}.`;
+  const pro=dayTotal(k), t=T(), pp=Math.min(100,pro/t.pmax*100);
+  document.getElementById("hpro").innerHTML=`${pro}<small> / ${t.pmin}–${t.pmax} g</small>`;
+  const pb=document.getElementById("hprobar"); pb.style.width=pp+"%"; pb.className=pro<t.pmin?"low":"";
+  const goal=waterGoal(), ml=water.g*250;
+  document.getElementById("hwater").innerHTML=`${(ml/1000).toFixed(2).replace(/0$/,"")}<small> / ${goal/1000} L</small>`;
+  document.getElementById("hwbar").style.width=Math.min(100,ml/goal*100)+"%";
+  const ws=iso(weekStart(now)), wk=gym.filter(g=>g.date>=ws).length;
+  document.getElementById("hgym").innerHTML=`${wk}<small> / ${t.freq}</small>`;
+  document.getElementById("hgymnote").textContent=wk>=t.freq?"Weekly goal done.":`${t.freq-wk} to go this week`;
+  document.getElementById("hmeals").innerHTML=`<ul class="hm">${SLOTS.map(([s,l])=>{const id=plan[k][s],r=id&&RB[id];
+    return `<li><span><span class="sl">${l}</span>${r?esc(r.n):"Not planned"}${r&&missing(r).length?` <span class="bb">· buy ${missing(r).map(x=>esc(ING[x][0])).join(", ")}</span>`:""}</span><span class="pp">${r?r.p+" g":""}</span></li>`}).join("")}</ul>`;
+  const tg=gym.find(g=>g.date===today());
+  document.getElementById("hwork").innerHTML= tg
+    ? `<p style="margin:0 0 6px"><b>Day ${tg.day} done.</b> ${Object.keys(tg.ex).length} exercises logged.</p><p class="meta" style="margin:0">Rest tomorrow, then Day ${{A:"B",B:"C",C:"A"}[tg.day]}.</p>`
+    : `<p style="margin:0 0 6px"><b>Day ${nextDay()}</b></p><ul class="hm">${ROUTINE[nextDay()].map(([n,t])=>`<li><span>${esc(n)}</span><span class="meta">${t}</span></li>`).join("")}</ul>`;
+  const need=Object.keys(shopList());
+  document.getElementById("hshop").innerHTML= need.length
+    ? `<p style="margin:0 0 6px"><b>${need.length} item${need.length>1?"s":""}</b> for this week's plan</p><p class="meta" style="margin:0">${need.slice(0,6).map(x=>esc(ING[x][0])).join(", ")}${need.length>6?"…":""}</p>`
+    : `<p class="meta" style="margin:0">Nothing to buy. Your plan uses what you have.</p>`;
+}
+
+/* ---- assistant ---- */
+const fab=document.getElementById("fab"), panel=document.getElementById("panel"), msgs=document.getElementById("msgs");
+let sample=null, turns=[], busy=false;
+function context(){
+  const haveL=Object.keys(ING).filter(k=>have[k]).map(k=>ING[k][0]);
+  const needL=Object.keys(ING).filter(k=>!have[k]).map(k=>ING[k][0]);
+  const customL=Object.keys(custom).map(k=>ING[k][0]);
+  const planL=DAYS.map(d=>`${d}: `+SLOTS.map(([s,l])=>`${l}=${plan[d][s]?RB[plan[d][s]].n:"none"}`).join(", ")+` (≈${dayTotal(d)} g protein)`).join("\n");
+  const recipesL=R.map(r=>`${r.n} (${r.p} g protein; ${missing(r).length?"missing "+missing(r).map(x=>ING[x][0]).join("/"):"ready"})`).join("\n");
+  const t=T();
+  return `You are Ms Meal, a warm, slightly playful kitchen and nutrition helper inside a meal and gym planner page. The user is ${profile.a} years old, ${profile.s==="m"?"male":"female"}, ${profile.h} cm, ${profile.w} kg (BMI ${t.bmi.toFixed(1)}), training ${t.freq}x a week. Do not push weight loss or calorie cutting unless the user asks; if BMI is under 18.5, encourage eating enough.
+HARD RULES: Never suggest chicken, egg, shrimp/shellfish, or fish, or ingredients that commonly hide them (fish sauce/patis, bagoong, shrimp paste, egg noodles like miki or pancit canton, mayonnaise, oyster sauce, fish-based collagen); remind them to check labels where relevant.${profile.avoid?" Also avoid: "+profile.avoid+".":""}
+TARGETS: protein ${t.pmin}-${t.pmax} g/day; about ${t.kcal} kcal/day maintenance estimate; water ${t.water} ml/day (${t.waterGym} on gym days).
+Budget-friendly, easy, Filipino-grocery ingredients. Answer in plain text, short (under 150 words), with "- " bullets when listing. Give protein estimates per serving. No markdown tables or headings.
+
+PANTRY - has: ${haveL.join(", ")}
+Does not have: ${needL.join(", ")}
+Items she added herself: ${customL.join(", ")||"none"}
+Water today: ${water.g*250} ml of ${waterGoal()} ml goal
+GYM: routine is beginner full body A/B/C, ${t.freq}x a week. This week's workouts: ${gym.filter(g=>g.date>=iso(weekStart(new Date()))).length}. Recent log: ${[...gym].sort((a,b)=>a.date<b.date?1:-1).slice(0,4).map(g=>g.date+" Day "+g.day+": "+Object.entries(g.ex).map(([n,x])=>n+" "+(x.kg?x.kg+"kg x ":"")+x.reps.join("/")).join("; ")).join(" | ")||"none yet"}
+WEEK PLAN:
+${planL}
+SAVED RECIPES:
+${recipesL}`;
+}
+function addMsg(cls,text){const m=document.createElement("div");m.className="msg "+cls;m.textContent=text;msgs.appendChild(m);msgs.scrollTop=msgs.scrollHeight;return m}
+const errCopy={rate_limited:"Too many questions at once. Try again in a minute.",session_expired:"Please sign in to Claude again, then retry.",refused:"I can't help with that one. Try asking differently.",empty_completion:"I didn't get an answer. Try a simpler question."};
+async function ask(q){
+  if(busy||!sample||!q.trim())return; busy=true; document.getElementById("sendbtn").disabled=true;
+  document.getElementById("sugg").hidden=true;
+  addMsg("u",q); turns.push({role:"user",content:q}); if(turns.length>10)turns=turns.slice(-10);
+  if(turns[0].role!=="user")turns.shift();
+  const bubble=addMsg("a","Thinking…");
+  try{
+    const {text}=await sample([{role:"user",content:context()},...turns],{cache:false,onText:({text})=>{bubble.textContent=text;msgs.scrollTop=msgs.scrollHeight}});
+    bubble.textContent=text; turns.push({role:"assistant",content:text});
+  }catch(e){
+    turns.pop();
+    if(e.code==="not_granted"||e.code==="sampling_disabled"||e.code==="not_declared"||e.code==="capability_disabled"){bubble.remove();fab.hidden=true;panel.hidden=true;return}
+    bubble.className="msg a err"; bubble.textContent=(e.text?e.text+"\n\n":"")+(errCopy[e.code]||"Something went wrong. Try again.");
+  }finally{busy=false;document.getElementById("sendbtn").disabled=false}
+}
+function togglePanel(open){panel.hidden=!open;fab.setAttribute("aria-expanded",open);fab.textContent=open?"Close":"Ask Ms Meal";if(open)document.getElementById("askbox").focus()}
+fab.onclick=()=>togglePanel(panel.hidden);
+document.getElementById("pclose").onclick=()=>togglePanel(false);
+document.getElementById("askform").addEventListener("submit",e=>{e.preventDefault();const b=document.getElementById("askbox");const q=b.value;b.value="";ask(q)});
+document.getElementById("sugg").addEventListener("click",e=>{if(e.target.tagName==="BUTTON")ask(e.target.textContent)});
+(async()=>{try{sample=await window.claude?.use?.("sample")}catch(e){sample=null} if(sample)fab.hidden=false})();
+
+all();
+window.__ready=true; renderHome();
+</script>
+
+</body>
+</html>
