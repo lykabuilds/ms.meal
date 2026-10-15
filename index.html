@@ -9,25 +9,25 @@
 <title>Ms Meal</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap">
 <style>
-/* Layout: one working column — protein summary up top, tabbed tool below (recipes, week, pantry, shopping) */
+/* Layout: phone-app shell — greeting + progress rings on Today, soft rounded cards, floating bottom dock for the five sections */
 :root{
   --bg:#f3f5f1; --surface:#ffffff; --fg:#1d2620; --muted:#5d6b62; --line:#dbe2da;
   --accent:#2f7a4f; --accent-soft:#e2efe6; --turmeric:#c98a12; --turmeric-soft:#fbf0d9;
-  --warn:#b4502f; --warn-soft:#f8e5de; --water:#2b7fb8;
+  --warn:#b4502f; --warn-soft:#f8e5de; --water:#2b7fb8; --track:#e4ebe3; --shadow:0 1px 2px rgba(29,52,36,.05),0 8px 24px rgba(29,52,36,.07);
   --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --body:"Figtree", "Segoe UI", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#141a16; --surface:#1c241f; --fg:#e6ece7; --muted:#9aa9a0; --line:#2e3a33;
   --accent:#6cc28f; --accent-soft:#1f3a2a; --turmeric:#e6b04a; --turmeric-soft:#3a2f17;
-  --warn:#ef9474; --warn-soft:#3d2219; --water:#6fb6e6; color-scheme:dark}}
+  --warn:#ef9474; --warn-soft:#3d2219; --water:#6fb6e6; --track:#2a352e; --shadow:0 0 0 1px #26302a; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141a16; --surface:#1c241f; --fg:#e6ece7; --muted:#9aa9a0; --line:#2e3a33;
   --accent:#6cc28f; --accent-soft:#1f3a2a; --turmeric:#e6b04a; --turmeric-soft:#3a2f17;
-  --warn:#ef9474; --warn-soft:#3d2219; --water:#6fb6e6; color-scheme:dark}
+  --warn:#ef9474; --warn-soft:#3d2219; --water:#6fb6e6; --track:#2a352e; --shadow:0 0 0 1px #26302a; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
-.wrap{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:18px 150px}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
 h1{font-size:clamp(1.7rem,4vw,2.3rem);font-weight:800;letter-spacing:-.01em}
 .sub{color:var(--muted);margin:.35rem 0 0;max-width:62ch}
@@ -173,34 +173,79 @@ td.tot{font-variant-numeric:tabular-nums;white-space:nowrap}
 .hm .bb{color:var(--turmeric);font-size:12px}
 a.see{font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none}
 a.see:hover{text-decoration:underline}
+
+/* ---- app shell redesign ---- */
+body{background:var(--bg)}
+.appbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.brand{display:flex;align-items:center;gap:8px}
+.brand h1{font-size:1.25rem;font-weight:800;letter-spacing:-.01em}
+.leaf{width:22px;height:22px;border-radius:0 60% 0 60%;background:linear-gradient(135deg,var(--accent),var(--turmeric));display:inline-block}
+#profline{margin:0;font-size:12px}
+.hello{margin:18px 0 14px}
+.hello #hdate{margin:0;text-transform:uppercase;letter-spacing:.08em;font-weight:600;font-size:11.5px}
+.hello h2{font-size:clamp(1.9rem,6vw,2.5rem);font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:2px 0 6px}
+.hello #hline{margin:0;color:var(--fg);font-size:15px;max-width:52ch}
+.rings{background:var(--surface);border-radius:24px;box-shadow:var(--shadow);padding:20px 16px 14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;justify-items:center;margin-bottom:16px}
+.ring{position:relative;width:min(108px,26vw);aspect-ratio:1;max-width:100%;display:grid;place-items:center}
+.ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--track) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 11px),#000 calc(100% - 10px));mask:radial-gradient(farthest-side,transparent calc(100% - 11px),#000 calc(100% - 10px));transition:background .4s}
+.rin{position:relative;text-align:center;line-height:1.1}
+.rin b{display:block;font-family:var(--display);font-weight:800;font-size:1.2rem;font-variant-numeric:tabular-nums}
+.rin b small{display:block;font-size:.62rem;font-weight:600;color:var(--muted);font-family:var(--body)}
+.rin span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.ringnote{grid-column:1/-1;margin:6px 0 0;font-size:12.5px;color:var(--muted);text-align:center}
+.ringnote b{color:var(--fg)}
+ul.hm{margin:0;padding:0}
+.hm li .meta{white-space:nowrap}
+.gsum{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.card,.box,.water,.shop,.weekwrap,.t,.addform,.panel{border:0!important;border-radius:20px;box-shadow:var(--shadow)}
+.addform{background:var(--surface)}
+.card{padding:16px}
+.status{align-self:flex-start;background:var(--turmeric-soft);padding:3px 10px;border-radius:999px;font-size:12.5px}
+.status.ok{background:var(--accent-soft)}
+.water{margin:0 0 16px}
+.glass{border-radius:6px 6px 12px 12px}
+.gsum{gap:14px}
+.box h3{font-size:1.05rem}
+button.link{border:0;background:none;color:var(--accent);font:600 13.5px var(--body);padding:0;margin-top:10px;cursor:pointer}
+.btn{border-radius:999px;padding:10px 18px}
+.mini{border-radius:999px}
+.f{border:0;background:var(--surface);box-shadow:var(--shadow)}
+.f[aria-pressed="true"]{box-shadow:none}
+.item{border-radius:999px;padding:7px 12px}
+.addform input[type=text],select,.exin input,.logtop input,.logtop select,.pf input,.pf select{border-radius:12px}
+.seg2{display:flex;gap:4px;background:var(--track);border-radius:999px;padding:4px;margin:10px 0 16px;width:max-content;max-width:100%;overflow-x:auto}
+.seg2 button{border:0;background:transparent;font:600 13.5px var(--body);color:var(--muted);padding:7px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.seg2 button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:var(--shadow)}
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom, 0px));z-index:19;display:flex;gap:2px;background:var(--surface);border-radius:999px;padding:6px;box-shadow:0 10px 30px rgba(20,40,28,.18),0 0 0 1px var(--line);width:min(440px,calc(100vw - 24px))}
+.dock button{flex:1;border:0;background:transparent;border-radius:999px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--muted);font:600 11px var(--body);min-width:0}
+.dock svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dock button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.fab{bottom:calc(84px + env(safe-area-inset-bottom, 0px));padding:11px 16px;background:var(--accent);color:var(--surface)}
+.panel{bottom:calc(140px + env(safe-area-inset-bottom, 0px));max-height:min(540px,calc(100vh - 170px))}
+@media (max-width:420px){.fab{padding:10px 14px;font-size:13px}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
 <div class="wrap">
-  <header>
-    <h1>Ms Meal</h1>
-    <p class="sub">Your meal, water, and gym buddy. Targets adjust to your weight, height, age, and gym schedule.</p>
-    <p class="meta" id="profline" style="margin-top:6px"></p>
+  <header class="appbar">
+    <div class="brand"><span class="leaf" aria-hidden="true"></span><h1>Ms Meal</h1></div>
+    <p class="meta" id="profline"></p>
   </header>
 
-  <nav class="tabs" role="tablist">
-    <button role="tab" id="tab-home" aria-selected="true" data-tab="home">Today</button>
-    <button role="tab" id="tab-recipes" aria-selected="false" data-tab="recipes">Recipes</button>
-    <button role="tab" id="tab-week" aria-selected="false" data-tab="week">Week plan</button>
-    <button role="tab" id="tab-gym" aria-selected="false" data-tab="gym">Gym</button>
-    <button role="tab" id="tab-pantry" aria-selected="false" data-tab="pantry">My pantry</button>
-    <button role="tab" id="tab-shop" aria-selected="false" data-tab="shop">Shopping list</button>
-    <button role="tab" id="tab-profile" aria-selected="false" data-tab="profile">Profile</button>
-  </nav>
+  <div class="seg2" id="foodseg" hidden>
+    <button data-tab="recipes" aria-pressed="true">Recipes</button>
+    <button data-tab="week" aria-pressed="false">Week plan</button>
+    <button data-tab="shop" aria-pressed="false">Shopping</button>
+  </div>
 
   <section id="p-home">
-    <div class="hello"><h2 id="hdate">Today</h2><p class="meta" id="hline"></p></div>
+    <div class="hello"><p class="meta" id="hdate">Today</p><h2 id="hgreet">Hello!</h2><p id="hline"></p></div>
 
-    <section class="targets" aria-label="Today at a glance">
-      <div class="t"><div class="k">Protein planned today</div><div class="v" id="hpro">–</div><div class="meter wide"><i id="hprobar"></i></div></div>
-      <div class="t"><div class="k">Water today</div><div class="v" id="hwater">–</div><div class="meter wide"><i id="hwbar" class="wbar"></i></div></div>
-      <div class="t"><div class="k">Gym this week</div><div class="v" id="hgym">–</div><div class="meta" id="hgymnote"></div></div>
-      <div class="t"><div class="k">Week protein average</div><div class="v" id="avg">–</div><div class="meta" id="avgnote">Goal –</div></div>
+    <section class="rings" aria-label="Today at a glance">
+      <div class="ring" id="rpro" style="--p:0;--c:var(--accent)"><div class="rin"><b id="hpro">–</b><span>protein</span></div></div>
+      <div class="ring" id="rwat" style="--p:0;--c:var(--water)"><div class="rin"><b id="hwater">–</b><span>water</span></div></div>
+      <div class="ring" id="rgym" style="--p:0;--c:var(--turmeric)"><div class="rin"><b id="hgym">–</b><span>gym</span></div></div>
+      <p class="ringnote"><span id="hgymnote"></span> · Week protein avg <b id="avg">–</b> <span id="avgnote"></span></p>
     </section>
 
     <section class="water" aria-label="Water today">
@@ -210,9 +255,9 @@ a.see:hover{text-decoration:underline}
     </section>
 
     <div class="gsum">
-      <div class="box"><h3>Today's meals</h3><div id="hmeals"></div><button class="mini" data-tab="week" style="margin-top:10px">Change in Week plan</button></div>
-      <div class="box"><h3>Workout</h3><div id="hwork"></div><button class="mini" data-tab="gym" style="margin-top:10px">Open gym log</button></div>
-      <div class="box"><h3>To buy</h3><div id="hshop"></div><button class="mini" data-tab="shop" style="margin-top:10px">Full shopping list</button></div>
+      <div class="box"><h3>Today's meals</h3><div id="hmeals"></div><button class="link" data-tab="week">Change meals →</button></div>
+      <div class="box"><h3>Workout</h3><div id="hwork"></div><button class="link" data-tab="gym">Log workout →</button></div>
+      <div class="box"><h3>To buy</h3><div id="hshop"></div><button class="link" data-tab="shop">Shopping list →</button></div>
     </div>
 
     <div class="safe" style="margin-top:4px">
@@ -313,6 +358,14 @@ a.see:hover{text-decoration:underline}
     <p class="note">Cheapest protein wins: tofu, monggo, lentils, chickpeas, and milk. Add a small pack of pork giniling or lean beef when the budget allows.</p>
   </section>
 </div>
+
+<nav class="dock" role="tablist" aria-label="Sections">
+  <button role="tab" data-tab="home" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg><span>Today</span></button>
+  <button role="tab" data-tab="recipes" data-group="food" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h16a8 8 0 0 1-16 0zM8 9c0-2 2-2 2-4M12 9c0-2 2-2 2-4"/></svg><span>Food</span></button>
+  <button role="tab" data-tab="gym" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4M6 7v10M18 7v10M21 10v4M6 12h12"/></svg><span>Gym</span></button>
+  <button role="tab" data-tab="pantry" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM5 10h14M5 15h14M9 7h2"/></svg><span>Pantry</span></button>
+  <button role="tab" data-tab="profile" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/></svg><span>Me</span></button>
+</nav>
 
 <button class="fab" id="fab" aria-expanded="false" aria-controls="panel" hidden>Ask Ms Meal</button>
 <section class="panel" id="panel" hidden aria-label="Ms Meal assistant">
@@ -448,7 +501,7 @@ function all(){renderFilters();renderRecipes();renderWeek();renderPantry();rende
 
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-tab]");
-  if(t){const name=t.dataset.tab;document.querySelectorAll('nav.tabs [data-tab]').forEach(b=>{const on=b.dataset.tab===name;b.setAttribute("aria-selected",on);document.getElementById("p-"+b.dataset.tab).hidden=!on});if(t.closest(".gsum"))window.scrollTo({top:0})}
+  if(t){showTab(t.dataset.tab)}
   const f=e.target.closest("[data-f]"); if(f){filter=f.dataset.f;renderFilters();renderRecipes()}
 });
 document.addEventListener("change",e=>{
@@ -474,6 +527,20 @@ document.getElementById("copy").onclick=()=>{
   const msg=document.getElementById("ctoast");
   navigator.clipboard.writeText(txt).then(()=>msg.textContent="Copied.").catch(()=>{msg.textContent="Copy blocked here. Select the list and copy it manually."});
 };
+/* ---- navigation ---- */
+const FOOD=["recipes","week","shop"];
+function showTab(name){
+  ["home","recipes","week","shop","gym","pantry","profile"].forEach(n=>{const el=document.getElementById("p-"+n);if(el)el.hidden=n!==name});
+  const grp=FOOD.includes(name)?"recipes":name;
+  if(FOOD.includes(name))lastFood=name;
+  document.querySelectorAll(".dock [data-tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===grp));
+  document.getElementById("foodseg").hidden=!FOOD.includes(name);
+  document.querySelectorAll("#foodseg [data-tab]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.tab===name));
+  window.scrollTo({top:0});
+}
+let lastFood="recipes";
+document.querySelector('.dock [data-group="food"]').addEventListener("click",e=>{e.stopPropagation();showTab(lastFood)});
+
 /* ---- custom pantry items ---- */
 document.getElementById("addform").addEventListener("submit",e=>{
   e.preventDefault();
@@ -614,16 +681,23 @@ function todayKey(){return DAYS[(new Date().getDay()+6)%7]}
 function renderHome(){
   const now=new Date(), k=todayKey();
   document.getElementById("hdate").textContent=now.toLocaleDateString("en-PH",{weekday:"long",month:"long",day:"numeric"});
-  document.getElementById("hline").textContent=gymToday()?"Workout logged today. Drink a little extra water.":`Next workout: Day ${nextDay()}.`;
+  const h=now.getHours();
+  document.getElementById("hgreet").textContent=h<12?"Good morning!":h<18?"Good afternoon!":"Good evening!";
   const pro=dayTotal(k), t=T(), pp=Math.min(100,pro/t.pmax*100);
   document.getElementById("hpro").innerHTML=`${pro}<small> / ${t.pmin}–${t.pmax} g</small>`;
-  const pb=document.getElementById("hprobar"); pb.style.width=pp+"%"; pb.className=pro<t.pmin?"low":"";
+  const rp=document.getElementById("rpro"); rp.style.setProperty("--p",pp); rp.style.setProperty("--c",pro<t.pmin?"var(--warn)":"var(--accent)");
   const goal=waterGoal(), ml=water.g*250;
-  document.getElementById("hwater").innerHTML=`${(ml/1000).toFixed(2).replace(/0$/,"")}<small> / ${goal/1000} L</small>`;
-  document.getElementById("hwbar").style.width=Math.min(100,ml/goal*100)+"%";
+  document.getElementById("hwater").innerHTML=`${(ml/1000).toFixed(2).replace(/\.?0+$/,"")}<small> / ${goal/1000} L</small>`;
+  document.getElementById("rwat").style.setProperty("--p",Math.min(100,ml/goal*100));
   const ws=iso(weekStart(now)), wk=gym.filter(g=>g.date>=ws).length;
   document.getElementById("hgym").innerHTML=`${wk}<small> / ${t.freq}</small>`;
-  document.getElementById("hgymnote").textContent=wk>=t.freq?"Weekly goal done.":`${t.freq-wk} to go this week`;
+  document.getElementById("rgym").style.setProperty("--p",Math.min(100,wk/t.freq*100));
+  document.getElementById("hgymnote").textContent=wk>=t.freq?"Gym goal done this week":`${t.freq-wk} workout${t.freq-wk>1?"s":""} to go this week`;
+  const left=Math.max(0,Math.ceil((goal-ml)/250)), bits=[];
+  bits.push(left?`${left} glass${left>1?"es":""} of water left`:"Water goal done");
+  bits.push(gymToday()?"workout done today":`Day ${nextDay()} is your next workout`);
+  if(pro<t.pmin)bits.push(`plan ${t.pmin-pro} g more protein`);
+  document.getElementById("hline").textContent=bits.join(" · ")+".";
   document.getElementById("hmeals").innerHTML=`<ul class="hm">${SLOTS.map(([s,l])=>{const id=plan[k][s],r=id&&RB[id];
     return `<li><span><span class="sl">${l}</span>${r?esc(r.n):"Not planned"}${r&&missing(r).length?` <span class="bb">· buy ${missing(r).map(x=>esc(ING[x][0])).join(", ")}</span>`:""}</span><span class="pp">${r?r.p+" g":""}</span></li>`}).join("")}</ul>`;
   const tg=gym.find(g=>g.date===today());
